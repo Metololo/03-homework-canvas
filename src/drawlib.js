@@ -9,15 +9,61 @@ import * as Color from "./color.js";
  * in terms of `Square/Circle/Group` might change in the future 
  * (and actually, it will! See the part 2 of the homework!)
  * 
+ *
  * Users of the lib should build the shapes with helper functions such as
  * `square`, `circle` or `group`.
+ *
  * @typedef {
-   | {kind: "Square";color: Color;side : number; xCenter: number; yCenter:number }
    | {kind: "Circle";radius: number;color: Color; xCenter: number; yCenter: number}
    | {kind: "Group"; shapes : Array<Shape>}
-   | { kind: "Polygon", points: Array<{x: number; y:number}>}
+   | { kind: "Polygon",color: Color;points: Array<{x: number; y:number}>}
    } Shape
+  
+   @typedef {
+    {x: number,y: number}
+   } Point
 */
+
+/**
+ * @param {number} x
+ * @param {number} y
+ * @returns {Point}
+ */
+function getPoint(x,y){
+  return {x,y}
+}
+
+
+/**
+ * @param {Color} color
+ * @param {Array<{x:number; y:number}>} points
+ * @returns {Shape}
+ */
+export function polygon(color, points) {
+  return { kind:"Polygon", color: color, points: points };
+}
+
+/**
+ * @param {Color} color
+ * @param {number} width
+ * @param {number} height
+ * @returns {Shape}
+ */
+export function rectangle(color, width, height) {
+  const center = {x: 0, y:0};
+
+  const points = [];
+
+  const halfWidth = width/2;
+  const halfHeight = height/2;
+
+  points[0] = getPoint(center.x - halfWidth,center.y - halfHeight);
+  points[1] = getPoint(center.x + halfWidth,center.y - halfHeight);
+  points[2] = getPoint(center.x + halfWidth,center.y + halfHeight);
+  points[3] = getPoint(center.x - halfWidth,center.y + halfHeight);
+
+  return polygon(color,points);
+}
 
 /**
  * @param {Color} color
@@ -25,7 +71,7 @@ import * as Color from "./color.js";
  * @returns {Shape}
  */
 export function square(color, side) {
-  return { kind: "Square", color, side, xCenter: 0, yCenter: 0 };
+  return rectangle(color,side,side);
 }
 
 /**
@@ -45,7 +91,7 @@ export function group(shapes) {
   return { kind: "Group", shapes };
 }
 /**
- * This functions move every coordinates in a polygon,
+ * This function move every coordinates in a polygon,
  * @param {number} dx
  * @param {number} dy
  * @param {Shape} shape
@@ -69,7 +115,6 @@ function movePolygon(dx,dy,shape) {
 export function move(dx, dy, shape) {
   switch (shape.kind) {
     case "Circle":
-    case "Square":
       shape.xCenter += dx;
       shape.yCenter += dy;
       break;
@@ -113,20 +158,12 @@ function render(shape, context) {
         context
       );
       break;
-    case "Square":
-      renderSquare(
-        shape.color,
-        shape.xCenter,
-        shape.yCenter,
-        shape.side,
-        context
-      );
-      break;
     case "Group":
       shape.shapes.forEach((shape) => render(shape, context));
       break;
     case "Polygon":
-        break;
+      renderPolygon(shape,context);
+      break;
     default:
       throw "Unexpected! Some case is missing";
   }
@@ -147,45 +184,33 @@ function renderCircle(color, xCenter, yCenter, radius, context) {
 }
 
 /**
- * @param {Color} color
- * @param {number} side
- * @param {number} xCenter
- * @param {number} yCenter
- * @param {CanvasRenderingContext2D} context
- */
-function renderSquare(color, xCenter, yCenter, side, context) {
-  // Note: we could have used `context.rect` but the following
-  // code will be more easily translatable to draw polygon
-  // (see part 2 of the homework)
+* @returns {Path2D}
+* @param {Array<{x:number;y:number}>} points
+*/
+function polygonToPath(points) {
+
   const path = new Path2D();
-  const halfSide = side / 2;
-  path.moveTo(xCenter - halfSide, yCenter - halfSide);
-  path.lineTo(xCenter + halfSide, yCenter - halfSide);
-  path.lineTo(xCenter + halfSide, yCenter + halfSide);
-  path.lineTo(xCenter - halfSide, yCenter + halfSide);
+
+  points.forEach((coord,index) => {
+    if(index == 0) path.moveTo(coord.x,coord.y);
+    else path.lineTo(coord.x,coord.y);
+  });
+
   path.closePath();
-  context.fillStyle = Color.render(color);
-  context.fill(path);
+  return path;
+
 }
 
+
 /**
- * @param {Color} color
- * @param {number} side
- * @param {number} xCenter
- * @param {number} yCenter
+ * @param {Shape} polygon
  * @param {CanvasRenderingContext2D} context
  */
-function renderPolygon(color, xCenter, yCenter, side, context) {
-  // Note: we could have used `context.rect` but the following
-  // code will be more easily translatable to draw polygon
-  // (see part 2 of the homework)
-  const path = new Path2D();
-  const halfSide = side / 2;
-  path.moveTo(xCenter - halfSide, yCenter - halfSide);
-  path.lineTo(xCenter + halfSide, yCenter - halfSide);
-  path.lineTo(xCenter + halfSide, yCenter + halfSide);
-  path.lineTo(xCenter - halfSide, yCenter + halfSide);
-  path.closePath();
+function renderPolygon(polygon,context) {
+  if(polygon.kind !== "Polygon") throw "renderPolygon only accept Shape of kind Polygon";
+
+  const color = polygon.color;
   context.fillStyle = Color.render(color);
-  context.fill(path);
+  context.fill(polygonToPath(polygon.points));
 }
+
