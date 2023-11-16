@@ -15,6 +15,7 @@ import * as Color from "./color.js";
    | {kind: "Square";color: Color;side : number; xCenter: number; yCenter:number }
    | {kind: "Circle";radius: number;color: Color; xCenter: number; yCenter: number}
    | {kind: "Group"; shapes : Array<Shape>}
+   | { kind: "Polygon", points: Array<{x: number; y:number}>}
    } Shape
 */
 
@@ -43,30 +44,21 @@ export function circle(color, radius) {
 export function group(shapes) {
   return { kind: "Group", shapes };
 }
-
 /**
- * This functions move every shapes in a group, going through all
- * the sub-shapes elements.
+ * This functions move every coordinates in a polygon,
  * @param {number} dx
  * @param {number} dy
  * @param {Shape} shape
  * @returns {Shape}
  */
-function moveGroup(dx, dy, shape) {
-  if(shape.kind !== "Group") throw "Shape in moveGroup should be of kind Group"
-
-  shape.shapes.forEach(shape => {
-    if(shape.kind === "Group") {
-      shape = moveGroup(dx,dy,shape);
-    } else {
-      shape.xCenter += dx;
-      shape.yCenter += dy;
-    }
+function movePolygon(dx,dy,shape) {
+  if(shape.kind !== "Polygon") throw "Shape in movePolygon should be of kind Polygon";
+  shape.points.forEach(coord => {
+    coord.x += dx;
+    coord.y += dy;
   });
-
   return shape;
 }
-
 
 /**
  * @param {number} dx
@@ -82,7 +74,10 @@ export function move(dx, dy, shape) {
       shape.yCenter += dy;
       break;
     case "Group":
-      shape = moveGroup(dx,dy,shape);
+      shape.shapes.forEach(shape => move(dx,dy,shape));
+      break;
+    case "Polygon":
+      shape = movePolygon(dx,dy,shape);
       break;
     default:
       throw "Unexpected! Some case is missing";
@@ -100,6 +95,7 @@ export function renderCentered(shape, context) {
   const height = context.canvas.height;
   render(move(width / 2, height / 2, shape), context);
 }
+
 
 /**
  * @param {CanvasRenderingContext2D} context
@@ -129,6 +125,8 @@ function render(shape, context) {
     case "Group":
       shape.shapes.forEach((shape) => render(shape, context));
       break;
+    case "Polygon":
+        break;
     default:
       throw "Unexpected! Some case is missing";
   }
@@ -156,6 +154,28 @@ function renderCircle(color, xCenter, yCenter, radius, context) {
  * @param {CanvasRenderingContext2D} context
  */
 function renderSquare(color, xCenter, yCenter, side, context) {
+  // Note: we could have used `context.rect` but the following
+  // code will be more easily translatable to draw polygon
+  // (see part 2 of the homework)
+  const path = new Path2D();
+  const halfSide = side / 2;
+  path.moveTo(xCenter - halfSide, yCenter - halfSide);
+  path.lineTo(xCenter + halfSide, yCenter - halfSide);
+  path.lineTo(xCenter + halfSide, yCenter + halfSide);
+  path.lineTo(xCenter - halfSide, yCenter + halfSide);
+  path.closePath();
+  context.fillStyle = Color.render(color);
+  context.fill(path);
+}
+
+/**
+ * @param {Color} color
+ * @param {number} side
+ * @param {number} xCenter
+ * @param {number} yCenter
+ * @param {CanvasRenderingContext2D} context
+ */
+function renderPolygon(color, xCenter, yCenter, side, context) {
   // Note: we could have used `context.rect` but the following
   // code will be more easily translatable to draw polygon
   // (see part 2 of the homework)
