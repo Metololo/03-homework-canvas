@@ -45,9 +45,30 @@ export function group(shapes) {
 }
 
 /**
- * Add `dx` and `dy` respectively to the `x` and `y` of
- * the shape. Apply this to all the sub shapes if the given one
- * is a "Group"
+ * This functions move every shapes in a group, going through all
+ * the sub-shapes elements.
+ * @param {number} dx
+ * @param {number} dy
+ * @param {Shape} shape
+ * @returns {Shape}
+ */
+function moveGroup(dx, dy, shape) {
+  if(shape.kind !== "Group") throw "Shape in moveGroup should be of kind Group"
+
+  shape.shapes.forEach(shape => {
+    if(shape.kind === "Group") {
+      shape = moveGroup(dx,dy,shape);
+    } else {
+      shape.xCenter += dx;
+      shape.yCenter += dy;
+    }
+  });
+
+  return shape;
+}
+
+
+/**
  * @param {number} dx
  * @param {number} dy
  * @param {Shape} shape
@@ -55,10 +76,18 @@ export function group(shapes) {
  */
 export function move(dx, dy, shape) {
   switch (shape.kind) {
-    // TODO 1
+    case "Circle":
+    case "Square":
+      shape.xCenter += dx;
+      shape.yCenter += dy;
+      break;
+    case "Group":
+      shape = moveGroup(dx,dy,shape);
+      break;
     default:
       throw "Unexpected! Some case is missing";
   }
+  return shape;
 }
 
 /**
@@ -113,8 +142,10 @@ function render(shape, context) {
  * @param {CanvasRenderingContext2D} context
  */
 function renderCircle(color, xCenter, yCenter, radius, context) {
-  // TODO 2
-  // (search for how to draw an "ellipse" in canvas)
+  const circlePath = new Path2D();
+  circlePath.ellipse(xCenter,yCenter,radius,radius,0,0,2 * Math.PI);
+  context.fillStyle = Color.render(color);
+  context.fill(circlePath);
 }
 
 /**
