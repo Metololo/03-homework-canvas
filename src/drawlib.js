@@ -36,7 +36,7 @@ function getPoint(x,y){
 
 /**
  * @param {Color} color
- * @param {Array<{x:number; y:number}>} points
+ * @param {Array<Point>} points
  * @returns {Shape}
  */
 export function polygon(color, points) {
@@ -185,7 +185,7 @@ function renderCircle(color, xCenter, yCenter, radius, context) {
 
 /**
 * @returns {Path2D}
-* @param {Array<{x:number;y:number}>} points
+* @param {Array<Point>} points
 */
 function polygonToPath(points) {
 
