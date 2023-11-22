@@ -1,6 +1,7 @@
 import * as drawlib from "./drawlib.js";
 import * as color from "./color.js";
 
+
 /**
  * @throws {string}
  * @returns {CanvasRenderingContext2D}
